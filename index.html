@@ -16,7 +16,6 @@
             overflow: hidden;
             font-family: 'Segoe UI', 'Roboto', sans-serif;
         }
-        /* 导航栏样式 */
         .nav-bar {
             position: fixed;
             top: 0;
@@ -58,10 +57,9 @@
             background: #3d7a9a;
             transform: translateY(-2px);
         }
-        /* iframe 容器：占满除导航栏外的全部空间 */
         .iframe-container {
             position: fixed;
-            top: 60px;          /* 导航栏高度 */
+            top: 60px;
             left: 0;
             right: 0;
             bottom: 0;
@@ -75,14 +73,29 @@
             border: none;
             display: block;
         }
-        /* 简单响应式 */
+        /* 加载提示（可选） */
+        .loading-overlay {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            font-size: 1.2rem;
+            backdrop-filter: blur(4px);
+            transition: opacity 0.3s;
+        }
         @media (max-width: 700px) {
             .nav-bar { padding: 8px 12px; gap: 12px; }
             .nav-btn { padding: 6px 16px; font-size: 0.85rem; }
             .iframe-container { top: 52px; height: calc(100% - 52px); }
         }
     </style>
-    <!-- 引入 FontAwesome 图标库（可选，让导航更好看） -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -95,7 +108,10 @@
         </button>
     </div>
     <div class="iframe-container">
-        <!-- 默认显示实验1 -->
+        <!-- 添加加载提示（可选，显示在iframe上层） -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <i class="fas fa-spinner fa-pulse"></i> 加载实验中...
+        </div>
         <iframe id="expFrame" src="exp1.html"></iframe>
     </div>
 
@@ -103,6 +119,7 @@
         const frame = document.getElementById('expFrame');
         const btn1 = document.getElementById('btnExp1');
         const btn2 = document.getElementById('btnExp2');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
         function setActive(activeBtn) {
             btn1.classList.remove('active');
@@ -110,21 +127,30 @@
             activeBtn.classList.add('active');
         }
 
-        // 切换到实验1
-        btn1.addEventListener('click', () => {
-            if (frame.src.includes('exp1.html')) return;
-            frame.src = 'exp1.html';
-            setActive(btn1);
+        // 切换时显示加载提示
+        function switchTo(url, activeBtn) {
+            if (frame.src.includes(url)) return;
+            loadingOverlay.style.display = 'flex';
+            frame.src = url;
+            setActive(activeBtn);
+        }
+
+        // 监听iframe加载完成，隐藏加载提示
+        frame.addEventListener('load', () => {
+            loadingOverlay.style.display = 'none';
         });
 
-        // 切换到实验2
-        btn2.addEventListener('click', () => {
-            if (frame.src.includes('exp2.html')) return;
-            frame.src = 'exp2.html';
-            setActive(btn2);
-        });
+        // 如果初始加载时间过长，设置超时隐藏（防止一直显示）
+        setTimeout(() => {
+            if (loadingOverlay.style.display === 'flex') {
+                loadingOverlay.style.display = 'none';
+            }
+        }, 5000);
 
-        // 可选：让页面加载时按钮高亮（默认实验1已激活）
+        btn1.addEventListener('click', () => switchTo('exp1.html', btn1));
+        btn2.addEventListener('click', () => switchTo('exp2.html', btn2));
+
+        // 初始激活实验1
         setActive(btn1);
     </script>
 </body>
