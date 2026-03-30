@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>虚拟实验平台 - 氢氧化铁溶胶系列</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+        }
+        /* 导航栏样式 */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(30, 50, 70, 0.92);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px 20px;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .nav-btn {
+            background: #2c5a74;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 8px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 1px;
+        }
+        .nav-btn i {
+            font-size: 1.1rem;
+        }
+        .nav-btn.active {
+            background: #e67e22;
+            box-shadow: 0 0 10px rgba(230,126,34,0.5);
+        }
+        .nav-btn:hover:not(.active) {
+            background: #3d7a9a;
+            transform: translateY(-2px);
+        }
+        /* iframe 容器：占满除导航栏外的全部空间 */
+        .iframe-container {
+            position: fixed;
+            top: 60px;          /* 导航栏高度 */
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            background: #e0e8f5;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        /* 简单响应式 */
+        @media (max-width: 700px) {
+            .nav-bar { padding: 8px 12px; gap: 12px; }
+            .nav-btn { padding: 6px 16px; font-size: 0.85rem; }
+            .iframe-container { top: 52px; height: calc(100% - 52px); }
+        }
+    </style>
+    <!-- 引入 FontAwesome 图标库（可选，让导航更好看） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <button class="nav-btn" id="btnExp1">
+            <i class="fas fa-flask"></i> 实验1 · 水法制备
+        </button>
+        <button class="nav-btn" id="btnExp2">
+            <i class="fas fa-water"></i> 实验2 · 渗析纯化
+        </button>
+    </div>
+    <div class="iframe-container">
+        <!-- 默认显示实验1 -->
+        <iframe id="expFrame" src="exp1.html"></iframe>
+    </div>
+
+    <script>
+        const frame = document.getElementById('expFrame');
+        const btn1 = document.getElementById('btnExp1');
+        const btn2 = document.getElementById('btnExp2');
+
+        function setActive(activeBtn) {
+            btn1.classList.remove('active');
+            btn2.classList.remove('active');
+            activeBtn.classList.add('active');
+        }
+
+        // 切换到实验1
+        btn1.addEventListener('click', () => {
+            if (frame.src.includes('exp1.html')) return;
+            frame.src = 'exp1.html';
+            setActive(btn1);
+        });
+
+        // 切换到实验2
+        btn2.addEventListener('click', () => {
+            if (frame.src.includes('exp2.html')) return;
+            frame.src = 'exp2.html';
+            setActive(btn2);
+        });
+
+        // 可选：让页面加载时按钮高亮（默认实验1已激活）
+        setActive(btn1);
+    </script>
+</body>
+</html>
