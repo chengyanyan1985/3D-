@@ -3,155 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>虚拟实验平台 - 氢氧化铁溶胶系列</title>
+    <title>氢氧化铁溶胶制备及电泳测定 | 完整虚拟仿真实验系统</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            height: 100vh;
             width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: #1e2a32;
         }
-        .nav-bar {
-            position: fixed;
+
+        /* iframe 全屏嵌入实验内容，不留顶部空隙（导航悬浮覆盖） */
+        .experiment-frame {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            background: rgba(30, 50, 70, 0.92);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 12px 20px;
-            z-index: 100;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        .nav-btn {
-            background: #2c5a74;
-            border: none;
-            color: white;
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 8px 24px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: 1px;
-        }
-        .nav-btn i {
-            font-size: 1.1rem;
-        }
-        .nav-btn.active {
-            background: #e67e22;
-            box-shadow: 0 0 10px rgba(230,126,34,0.5);
-        }
-        .nav-btn:hover:not(.active) {
-            background: #3d7a9a;
-            transform: translateY(-2px);
-        }
-        .iframe-container {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: calc(100% - 60px);
-            background: #e0e8f5;
-        }
-        iframe {
-            width: 100%;
             height: 100%;
             border: none;
-            display: block;
+            z-index: 1;
+            background: #c8e0f0;
         }
-        /* 加载提示（可选） */
-        .loading-overlay {
+
+        /* ---------- 顶部悬浮导航面板 (玻璃质感，固定在顶端) ---------- */
+        .nav-panel {
             position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(15, 25, 35, 0.94);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 12px 20px;
+            border: 1px solid rgba(255, 215, 150, 0.6);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
             display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+            transition: all 0.2s ease;
+            max-width: 95vw;
+            width: auto;
+            min-width: 300px;
+        }
+
+        /* 步骤按钮区域：横向多行，支持换行，居中对齐 */
+        .steps-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             justify-content: center;
             align-items: center;
-            z-index: 200;
-            color: white;
-            font-size: 1.2rem;
-            backdrop-filter: blur(4px);
-            transition: opacity 0.3s;
         }
+
+        /* 步骤按钮：长文本友好，自适应宽度 */
+        .step-btn {
+            background: rgba(40, 65, 85, 0.9);
+            border: none;
+            color: #f0f6ff;
+            font-weight: 600;
+            font-size: 0.72rem;
+            line-height: 1.35;
+            cursor: pointer;
+            transition: 0.08s linear;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            border-radius: 40px;
+            padding: 8px 16px;
+            min-width: 130px;
+            max-width: 220px;
+            text-align: center;
+            word-break: break-word;
+            white-space: normal;
+            font-family: 'Segoe UI', 'PingFang SC', system-ui;
+            letter-spacing: 0.3px;
+            flex: 0 1 auto;
+        }
+
+        .step-btn.active-step {
+            background: linear-gradient(145deg, #e67e22, #c95f1a);
+            color: white;
+            box-shadow: 0 0 14px rgba(230,126,34,0.8);
+            border: 1px solid #ffbe76;
+        }
+
+        .step-btn.completed {
+            background: #2c6e4f;
+            color: #e2ffe2;
+            text-decoration: none;
+            opacity: 0.9;
+        }
+
+        .step-btn:hover {
+            transform: scale(1.02);
+            background: #e67e22cc;
+        }
+
+        /* 导航控制栏：包含控制按钮 + 步骤信息，支持换行 */
+        .nav-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .nav-btn {
+            background: #2a5f7a;
+            border: none;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 7px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.05s linear;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+
+        .nav-btn:active {
+            transform: translateY(1px);
+        }
+
+        .nav-btn.reset-global {
+            background: #7f5e4a;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 步骤信息区域：显示当前步骤名称和进度 */
+        .step-info {
+            text-align: center;
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #ffefcf;
+            letter-spacing: 0.3px;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+        }
+        .step-info span {
+            color: #ffb347;
+            font-weight: bold;
+        }
+
+        /* 小提示（移动端可隐藏，节省空间） */
+        .badge-tip {
+            font-size: 0.65rem;
+            color: #bbd9ff;
+            text-align: center;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255,255,200,0.25);
+            padding-top: 8px;
+        }
+
+        /* 加载提示（右下角位置保留） */
+        .loading-overlay {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 5px 16px;
+            border-radius: 40px;
+            color: #ffdd99;
+            font-size: 0.7rem;
+            z-index: 101;
+            pointer-events: none;
+            font-family: monospace;
+            transition: 0.2s;
+        }
+
+        /* 移动端适配：顶部面板宽度加大，按钮文字稍小 */
+        @media (max-width: 950px) {
+            .nav-panel {
+                top: 12px;
+                padding: 10px 16px;
+                gap: 10px;
+                max-width: 96vw;
+            }
+            .step-btn {
+                font-size: 0.68rem;
+                padding: 6px 12px;
+                min-width: 115px;
+                max-width: 190px;
+            }
+            .nav-btn {
+                padding: 5px 14px;
+                font-size: 0.72rem;
+            }
+            .step-info {
+                font-size: 0.68rem;
+                padding: 4px 12px;
+                white-space: nowrap;
+            }
+        }
+
         @media (max-width: 700px) {
-            .nav-bar { padding: 8px 12px; gap: 12px; }
-            .nav-btn { padding: 6px 16px; font-size: 0.85rem; }
-            .iframe-container { top: 52px; height: calc(100% - 52px); }
+            .step-btn {
+                font-size: 0.62rem;
+                padding: 5px 10px;
+                min-width: 100px;
+                max-width: 170px;
+            }
+            .nav-controls {
+                gap: 8px;
+            }
+            .badge-tip {
+                display: none;  /* 移动端隐藏提示保持简洁 */
+            }
+            .step-info {
+                white-space: normal;
+                line-height: 1.3;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .step-btn {
+                min-width: 85px;
+                font-size: 0.58rem;
+            }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="nav-bar">
-        <button class="nav-btn" id="btnExp1">
-            <i class="fas fa-flask"></i> 实验1 · 水法制备
-        </button>
-        <button class="nav-btn" id="btnExp2">
-            <i class="fas fa-water"></i> 实验2 · 渗析纯化
-        </button>
+
+<!-- 实验内容iframe -->
+<iframe id="experimentIframe" class="experiment-frame" src="./step1.html" title="完整电泳虚拟仿真实验"></iframe>
+
+<!-- 顶部悬浮导航栏（完整步骤描述按钮） -->
+<div class="nav-panel" id="navPanel">
+    <div class="steps-row" id="stepButtonsContainer">
+        <!-- 动态生成步骤按钮（长文本描述） -->
     </div>
-    <div class="iframe-container">
-        <!-- 添加加载提示（可选，显示在iframe上层） -->
-        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-            <i class="fas fa-spinner fa-pulse"></i> 加载实验中...
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevStepBtn" title="上一个实验阶段">◀ 上一步</button>
+        <button class="nav-btn" id="nextStepBtn" title="下一个实验阶段">下一步 ▶</button>
+        <button class="nav-btn reset-global" id="resetFlowBtn" title="重置整个实验流程 (跳回第一步)">🔄 重置流程</button>
+        <div class="step-info" id="stepInfoText">
+            📘 <span id="currentStepName">氢氧化铁溶胶制备 · 水解法</span> &nbsp;| 步骤 <span id="stepIndexDisplay">1</span>/5
         </div>
-        <iframe id="expFrame" src="exp1.html"></iframe>
     </div>
+    <div class="badge-tip">
+        💡 每个步骤内可独立操作 | 鼠标拖拽旋转/缩放3D场景 | 点击顶部按钮切换实验阶段
+    </div>
+</div>
+<div class="loading-overlay" id="loadingHint">⚡ 加载实验场景...</div>
 
-    <script>
-        const frame = document.getElementById('expFrame');
-        const btn1 = document.getElementById('btnExp1');
-        const btn2 = document.getElementById('btnExp2');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-
-        function setActive(activeBtn) {
-            btn1.classList.remove('active');
-            btn2.classList.remove('active');
-            activeBtn.classList.add('active');
+<script>
+    // ======================= 实验步骤元数据（完整描述按钮文本） =======================
+    const steps = [
+        { 
+            id: 1, 
+            shortTitle: "氢氧化铁溶胶制备 · 水解法",
+            longLabel: "1. 氢氧化铁溶胶制备 · 水解法",
+            file: "step1.html", 
+            desc: "FeCl₃水解法制备红棕色Fe(OH)₃溶胶"
+        },
+        { 
+            id: 2, 
+            shortTitle: "氢氧化铁溶胶纯化 · 渗析法",
+            longLabel: "2. 氢氧化铁溶胶纯化 · 渗析法",
+            file: "step2.html", 
+            desc: "珂罗酊袋渗析去除Cl⁻离子，纯化胶体"
+        },
+        { 
+            id: 3, 
+            shortTitle: "辅助液配制 · 电导率匹配",
+            longLabel: "3. 辅助液配制 · 电导率匹配",
+            file: "step3.html", 
+            desc: "配制与溶胶电导率相同的KCl辅助液"
+        },
+        { 
+            id: 4, 
+            shortTitle: "U型电泳仪-装管操作",
+            longLabel: "4. U型电泳仪-装管操作",
+            file: "step4.html", 
+            desc: "倾倒溶胶、滴加辅助液、垂直插入铂电极"
+        },
+        { 
+            id: 5, 
+            shortTitle: "电泳操作-界面移动法",
+            longLabel: "5. 电泳操作-界面移动法",
+            file: "step5.html", 
+            desc: "稳压器供电，测量ζ电位，计算电泳速度"
         }
+    ];
 
-        // 切换时显示加载提示
-        function switchTo(url, activeBtn) {
-            if (frame.src.includes(url)) return;
-            loadingOverlay.style.display = 'flex';
-            frame.src = url;
-            setActive(activeBtn);
-        }
-
-        // 监听iframe加载完成，隐藏加载提示
-        frame.addEventListener('load', () => {
-            loadingOverlay.style.display = 'none';
-        });
-
-        // 如果初始加载时间过长，设置超时隐藏（防止一直显示）
-        setTimeout(() => {
-            if (loadingOverlay.style.display === 'flex') {
-                loadingOverlay.style.display = 'none';
+    let currentStepIndex = 0;        // 0-based 索引
+    let iframe = document.getElementById('experimentIframe');
+    const loadingHint = document.getElementById('loadingHint');
+    
+    // DOM 元素
+    const stepButtonsContainer = document.getElementById('stepButtonsContainer');
+    const prevBtn = document.getElementById('prevStepBtn');
+    const nextBtn = document.getElementById('nextStepBtn');
+    const resetFlowBtn = document.getElementById('resetFlowBtn');
+    const stepNameSpan = document.getElementById('currentStepName');
+    const stepIndexDisplaySpan = document.getElementById('stepIndexDisplay');
+    
+    // 辅助函数: 更新所有UI状态（高亮按钮、步骤信息、禁用边界）
+    function updateUIForStep(index) {
+        const stepData = steps[index];
+        // 更新步骤信息栏 (展示短标题)
+        stepNameSpan.innerText = stepData.shortTitle;
+        stepIndexDisplaySpan.innerText = `${index+1}`;
+        
+        // 更新步骤按钮样式：active / completed
+        const allStepBtns = document.querySelectorAll('.step-btn');
+        allStepBtns.forEach((btn, idx) => {
+            btn.classList.remove('active-step');
+            if (idx < index) {
+                btn.classList.add('completed');
+            } else if (idx === index) {
+                btn.classList.add('active-step');
+                btn.classList.remove('completed');
+            } else {
+                btn.classList.remove('completed');
+                btn.classList.remove('active-step');
             }
-        }, 5000);
-
-        btn1.addEventListener('click', () => switchTo('exp1.html', btn1));
-        btn2.addEventListener('click', () => switchTo('exp2.html', btn2));
-
-        // 初始激活实验1
-        setActive(btn1);
-    </script>
+        });
+        
+        // 边界按钮禁用
+        prevBtn.disabled = (index === 0);
+        nextBtn.disabled = (index === steps.length - 1);
+        
+        // 切换 iframe 源 (如果不同)
+        const targetFile = stepData.file;
+        let currentSrc = iframe.src;
+        let expectedUrl;
+        if (targetFile.startsWith('./')) {
+            expectedUrl = new URL(targetFile, window.location.href).href;
+        } else {
+            expectedUrl = new URL(`./${targetFile}`, window.location.href).href;
+        }
+        
+        if (currentSrc !== expectedUrl) {
+            loadingHint.style.opacity = '1';
+            iframe.src = targetFile.startsWith('./') ? targetFile : `./${targetFile}`;
+        } else {
+            setTimeout(() => { loadingHint.style.opacity = '0'; }, 200);
+        }
+    }
+    
+    // iframe 加载完成后隐藏提示，并可发送同步消息（可选）
+    iframe.addEventListener('load', () => {
+        loadingHint.style.opacity = '0';
+        // 确保高亮同步（再次）
+        updateUIForStep(currentStepIndex);
+        // 友好提示当前步骤
+        const stepDesc = steps[currentStepIndex].desc;
+        showFloatingToast(`📌 当前阶段：${steps[currentStepIndex].shortTitle} — ${stepDesc}`);
+    });
+    
+    // 短暂悬浮提示 (右下角或不干扰)
+    function showFloatingToast(msg) {
+        const toast = document.createElement('div');
+        toast.innerText = msg;
+        toast.style.cssText = 'position:fixed; bottom:90px; right:20px; background:#000000bb; backdrop-filter:blur(12px); color:#ffe6b3; border-radius:36px; padding:6px 20px; font-size:0.75rem; z-index:102; max-width:280px; text-align:center; pointer-events:none; transition:0.2s; font-weight:500;';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 400);
+        }, 2200);
+    }
+    
+    // 切换步骤核心逻辑
+    function goToStep(stepIdx) {
+        if (stepIdx < 0 || stepIdx >= steps.length) return;
+        if (stepIdx === currentStepIndex) return;
+        currentStepIndex = stepIdx;
+        updateUIForStep(currentStepIndex);
+        // 额外提示步骤变更
+        const step = steps[currentStepIndex];
+        showFloatingToast(`🔁 切换至「${step.shortTitle}」，请开始实验操作`);
+    }
+    
+    function nextStep() {
+        if (currentStepIndex + 1 < steps.length) {
+            goToStep(currentStepIndex + 1);
+        } else {
+            showFloatingToast('🎉 恭喜！已完成全部实验步骤！可在第5步进行电泳测量与ζ电位计算。');
+        }
+    }
+    
+    function prevStep() {
+        if (currentStepIndex - 1 >= 0) {
+            goToStep(currentStepIndex - 1);
+        }
+    }
+    
+    function resetFlow() {
+        if (currentStepIndex !== 0) {
+            goToStep(0);
+        } else {
+            // 已经在第一步，强制重载step1保证完全重置状态
+            const firstFile = steps[0].file;
+            iframe.src = firstFile.startsWith('./') ? firstFile : `./${firstFile}`;
+            currentStepIndex = 0;
+            updateUIForStep(0);
+        }
+        showFloatingToast('🔄 实验流程已重置，可从溶胶制备开始逐步操作。');
+    }
+    
+    // ========== 动态生成带有完整描述的步骤按钮 ==========
+    function generateStepButtons() {
+        stepButtonsContainer.innerHTML = '';
+        steps.forEach((step, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'step-btn';
+            // 按钮文本使用完整长标签: "1. 氢氧化铁溶胶制备 · 水解法" 等
+            btn.textContent = step.longLabel;
+            btn.setAttribute('data-step-idx', idx);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goToStep(idx);
+            });
+            stepButtonsContainer.appendChild(btn);
+        });
+    }
+    
+    // 监听iframe内部可能发送的导航请求（预留，若子步骤需要自动跳转可扩展）
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'navigateStep') {
+            const target = parseInt(event.data.step, 10);
+            if (!isNaN(target) && target >= 1 && target <= steps.length) {
+                goToStep(target - 1);
+            }
+        }
+    });
+    
+    // 初始化
+    function init() {
+        generateStepButtons();
+        currentStepIndex = 0;
+        updateUIForStep(0);
+        // 绑定控制按钮
+        prevBtn.addEventListener('click', prevStep);
+        nextBtn.addEventListener('click', nextStep);
+        resetFlowBtn.addEventListener('click', resetFlow);
+        // 初始短暂loading消失
+        setTimeout(() => {
+            loadingHint.style.opacity = '0';
+        }, 600);
+        console.log('实验导航系统已启动 | 顶部导航 | 步骤: 制备→纯化→辅助液→U型装管→电泳测定');
+    }
+    
+    init();
+    
+    // 窗口尺寸自适应：无额外操作，iframe自动100%
+    window.addEventListener('resize', () => {});
+</script>
 </body>
 </html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>界面移动法电泳 | 完整U型电泳仪 + 左前方超级稳压器（正负极互换）</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Microsoft YaHei', sans-serif;
+        }
+        /* 左侧控制面板 - 悬浮玻璃质感 */
+        .control-panel {
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 320px;
+            background: rgba(25, 35, 50, 0.92);
+            backdrop-filter: blur(18px);
+            border-radius: 32px;
+            padding: 20px 18px;
+            z-index: 30;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            pointer-events: auto;
+            color: #f0f5fc;
+            font-size: 13px;
+        }
+        @media (max-width: 700px) {
+            .control-panel {
+                width: 260px;
+                left: 12px;
+                padding: 14px;
+            }
+        }
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ffb347;
+            display: inline-block;
+            width: 100%;
+            letter-spacing: 1px;
+        }
+        .param-group {
+            background: rgba(0,0,0,0.35);
+            border-radius: 24px;
+            padding: 12px 14px;
+            margin: 12px 0;
+        }
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .param-row label {
+            width: 70px;
+            font-weight: 600;
+            color: #ffde9c;
+        }
+        .param-row input[type="number"] {
+            width: 80px;
+            background: #eef3ff;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #1a3a52;
+        }
+        .param-row input[type="range"] {
+            flex: 1;
+            min-width: 120px;
+            height: 4px;
+            border-radius: 10px;
+        }
+        .value-badge {
+            background: #2c6085;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0 12px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #2c6085;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.08s linear;
+            font-size: 0.85rem;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            flex: 1;
+        }
+        button:active { transform: translateY(2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .stop-btn { background: #b1421b; }
+        .reset-btn { background: #7f6b5c; }
+        .record-btn { background: #2f7652; }
+        .timer-area {
+            background: #0f1e2c;
+            border-radius: 60px;
+            text-align: center;
+            padding: 8px;
+            margin: 12px 0;
+            font-family: monospace;
+        }
+        .timer {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #5ef074;
+        }
+        .distance-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffb347;
+            text-align: center;
+        }
+        .zeta-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #7bc5ff;
+        }
+        .info-note {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 10px;
+            color: #bbd4f0;
+        }
+        .electrode-status {
+            background: #1e3a4a;
+            border-radius: 20px;
+            padding: 6px;
+            text-align: center;
+            font-size: 0.7rem;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 电泳控制面板 - 左侧导航 -->
+    <div class="control-panel">
+        <div class="panel-title">⚡ 界面移动法 · 电泳操作</div>
+        <div class="param-group">
+            <div class="param-row">
+                <label>电压 E (V)</label>
+                <input type="number" id="voltageNum" value="60" step="5" min="0" max="150">
+                <input type="range" id="voltageSlider" min="0" max="150" value="60" step="1">
+                <span class="value-badge" id="voltageShow">60 V</span>
+            </div>
+            <div class="param-row">
+                <label>极距 L (cm)</label>
+                <input type="number" id="distanceNum" value="40" step="1" min="20" max="70">
+                <input type="range" id="distanceSlider" min="20" max="70" value="40" step="0.5">
+                <span class="value-badge" id="distanceShow">40.0 cm</span>
+            </div>
+            <div class="param-row">
+                <label>参考 ζ</label>
+                <span style="background:#2c4e6e; padding:4px 12px; border-radius:40px;">理论 0.052 V</span>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="startBtn">▶ 开始电泳</button>
+            <button id="stopBtn" class="stop-btn" disabled>⏹️ 停止</button>
+            <button id="resetMoveBtn" class="reset-btn">🔄 重置界面</button>
+        </div>
+
+        <div class="timer-area">
+            <div>⏱️ 电泳时间</div>
+            <div class="timer" id="timerDisplay">0.0 s</div>
+        </div>
+
+        <div style="text-align:center; margin: 8px 0;">
+            <div>📈 阴极界面上升距离</div>
+            <div class="distance-value" id="liveDistance">0.00 mm</div>
+        </div>
+
+        <div class="button-group">
+            <button id="recordBtn" class="record-btn">📊 记录 & 计算 ζ 电位</button>
+        </div>
+        <div style="background:#00000055; border-radius:24px; padding:12px; margin-top:6px;">
+            <div>⚡ 电泳速度 u = <strong id="speedVal">0.0000</strong> cm/s</div>
+            <div>ζ 电位 = <span id="zetaVal" class="zeta-value">0.0000</span> V</div>
+            <div style="font-size:0.7rem;">(K=4, η=0.01005 P, D=81, 300²=90000)</div>
+        </div>
+        <div class="electrode-status">
+            ✅ 铂电极已垂直插入 | 溶胶: Fe(OH)₃ 带正电 → 向阴极(-)移动
+        </div>
+        <div class="info-note">
+            🖱️ 鼠标拖拽旋转视角 | 滚动缩放 | 左侧阴极溶胶界面上升
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.136.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.136.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // --- 初始化场景 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb8d4f0);
+        scene.fog = new THREE.FogExp2(0xb8d4f0, 0.006);
+
+        const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5.2, 3.2, 6.5);
+        camera.lookAt(0, 0.9, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.07;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 14;
+        controls.target.set(0, 1.0, 0);
+        
+        // 灯光
+        const ambientLight = new THREE.AmbientLight(0x6c8cac, 0.58);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xfff2e0, 1.2);
+        mainLight.position.set(3.2, 5.2, 2.8);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        const fillLight = new THREE.PointLight(0x8aaccc, 0.55);
+        fillLight.position.set(-1.8, 2.2, 2.2);
+        scene.add(fillLight);
+        const backFill = new THREE.PointLight(0xffbb88, 0.5);
+        backFill.position.set(1.4, 1.6, -3.0);
+        scene.add(backFill);
+        const rimLight = new THREE.PointLight(0xcceeff, 0.6);
+        rimLight.position.set(2.2, 2.5, -3.2);
+        scene.add(rimLight);
+        
+        // 实验台
+        function createLabTable() {
+            const group = new THREE.Group();
+            const topMat = new THREE.MeshStandardMaterial({ color: 0xc8a27a, roughness: 0.62 });
+            const tableTop = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.18, 6.4), topMat);
+            tableTop.position.y = -2.15;
+            tableTop.receiveShadow = true;
+            tableTop.castShadow = true;
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x8b5a3c });
+            const positions = [[-2.9, -2.48, -2.4], [2.9, -2.48, -2.4], [-2.9, -2.48, 2.4], [2.9, -2.48, 2.4]];
+            positions.forEach(pos => {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.4), legMat);
+                leg.position.set(pos[0], pos[1], pos[2]);
+                leg.castShadow = true;
+                group.add(leg);
+            });
+            group.add(tableTop);
+            return group;
+        }
+        scene.add(createLabTable());
+        const tableSurfaceY = -2.06; 
+
+        // ========== 超级稳压器模型 (左前方位置，正负极互换：红色在右，黑色在左) ==========
+        const stabilizerGroup = new THREE.Group();
+        
+        // 主体：银色金属外壳
+        const caseMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.92, roughness: 0.25, emissive: 0x222222, emissiveIntensity: 0.05 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.72, 1.1), caseMat);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        body.position.y = 0.36;
+        stabilizerGroup.add(body);
+        
+        // 前面板装饰
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.85, roughness: 0.3 });
+        const frontPanel = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.62, 0.05), panelMat);
+        frontPanel.position.set(0, 0.37, 0.565);
+        stabilizerGroup.add(frontPanel);
+        
+        // 数字显示屏
+        const screenMat = new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x2266aa, emissiveIntensity: 0.5 });
+        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.28, 0.03), screenMat);
+        screen.position.set(0.25, 0.48, 0.59);
+        stabilizerGroup.add(screen);
+        
+        // 玻璃效果
+        const glassScreen = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.25, 0.02), new THREE.MeshPhysicalMaterial({ color: 0xaaccff, metalness: 0.95, roughness: 0.1, transparent: true, opacity: 0.45 }));
+        glassScreen.position.set(0.25, 0.48, 0.605);
+        stabilizerGroup.add(glassScreen);
+        
+        // 旋钮
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.8, roughness: 0.2 });
+        const knobGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.08, 32);
+        const leftKnob = new THREE.Mesh(knobGeo, knobMat);
+        leftKnob.position.set(-0.45, 0.38, 0.59);
+        leftKnob.rotation.x = Math.PI / 2;
+        stabilizerGroup.add(leftKnob);
+        
+        const rightKnob = new THREE.Mesh(knobGeo, knobMat);
+        rightKnob.position.set(0.85, 0.38, 0.59);
+        rightKnob.rotation.x = Math.PI / 2;
+        stabilizerGroup.add(rightKnob);
+        
+        // 指示灯
+        const ledMat = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff0000, emissiveIntensity: 0.6 });
+        const ledLight = new THREE.Mesh(new THREE.SphereGeometry(0.06, 24, 24), ledMat);
+        ledLight.position.set(-0.7, 0.58, 0.59);
+        stabilizerGroup.add(ledLight);
+        
+        // ========== 正负极互换：正极（红色）放在右侧（x=0.65），负极（黑色）放在左侧（x=-0.2） ==========
+        // 正极 (+) 红色接线柱 (右侧)
+        const posTerminalBase = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.16, 24), new THREE.MeshStandardMaterial({ color: 0xcc3333, metalness: 0.4 }));
+        posTerminalBase.position.set(0.65, 0.18, 0.59);
+        stabilizerGroup.add(posTerminalBase);
+        const posTerminalPost = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.22, 24), new THREE.MeshStandardMaterial({ color: 0xdd5555, metalness: 0.6 }));
+        posTerminalPost.position.set(0.65, 0.31, 0.59);
+        stabilizerGroup.add(posTerminalPost);
+        
+        // 负极 (-) 黑色接线柱 (左侧)
+        const negTerminalBase = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.16, 24), new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.3 }));
+        negTerminalBase.position.set(-0.2, 0.18, 0.59);
+        stabilizerGroup.add(negTerminalBase);
+        const negTerminalPost = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.22, 24), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.4 }));
+        negTerminalPost.position.set(-0.2, 0.31, 0.59);
+        stabilizerGroup.add(negTerminalPost);
+        
+        // 文字标签（位置随接线柱互换）
+        const posLabelDiv = document.createElement('div');
+        posLabelDiv.textContent = '+';
+        posLabelDiv.style.cssText = 'color:#ff8888; font-size:18px; font-weight:bold; background:none; pointer-events:none;';
+        const posLabel = new CSS2DObject(posLabelDiv);
+        posLabel.position.set(0.65, 0.12, 0.66);
+        stabilizerGroup.add(posLabel);
+        
+        const negLabelDiv = document.createElement('div');
+        negLabelDiv.textContent = '−';
+        negLabelDiv.style.cssText = 'color:#cccccc; font-size:20px; font-weight:bold; background:none; pointer-events:none;';
+        const negLabel = new CSS2DObject(negLabelDiv);
+        negLabel.position.set(-0.2, 0.12, 0.66);
+        stabilizerGroup.add(negLabel);
+        
+        // 散热栅格
+        const ventMat = new THREE.MeshStandardMaterial({ color: 0x668899, metalness: 0.5 });
+        for (let i = -0.6; i <= 0.6; i+=0.25) {
+            const vent = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.06), ventMat);
+            vent.position.set(i, 0.15, -0.56);
+            stabilizerGroup.add(vent);
+        }
+        
+        // 放置稳压器在电泳管的左前方
+        stabilizerGroup.position.set(-2.3, tableSurfaceY + 0.32, 1.6);
+        stabilizerGroup.rotation.y = 0.25;
+        stabilizerGroup.castShadow = true;
+        stabilizerGroup.receiveShadow = true;
+        scene.add(stabilizerGroup);
+        
+        // 稳压器标签
+        const stabilizerLabelDiv = document.createElement('div');
+        stabilizerLabelDiv.textContent = '⚡ 超级稳压器 (0-150V)';
+        stabilizerLabelDiv.style.cssText = 'background:rgba(20,40,60,0.9); color:#ffcc88; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:bold; backdrop-filter:blur(4px); border-left:3px solid #ffaa55; pointer-events:none;';
+        const stabilizerLabel = new CSS2DObject(stabilizerLabelDiv);
+        stabilizerLabel.position.set(-2.3, tableSurfaceY + 0.85, 1.6);
+        scene.add(stabilizerLabel);
+        
+        // 更新矩阵后获取接线柱世界坐标（互换后位置）
+        stabilizerGroup.updateMatrixWorld();
+        // 正极接线柱现在在右侧 (x=0.65)
+        const localPosTerminal = new THREE.Vector3(0.65, 0.31, 0.59);
+        // 负极接线柱在左侧 (x=-0.2)
+        const localNegTerminal = new THREE.Vector3(-0.2, 0.31, 0.59);
+        const posTerminalWorld = localPosTerminal.clone().applyQuaternion(stabilizerGroup.quaternion).add(stabilizerGroup.position);
+        const negTerminalWorld = localNegTerminal.clone().applyQuaternion(stabilizerGroup.quaternion).add(stabilizerGroup.position);
+        
+        // ========== U型玻璃仪器主体 ==========
+        const glassGroup = new THREE.Group();
+        scene.add(glassGroup);
+        const tubeHeight = 2.28, tubeBottomY = -0.29, tubeCenterY = 0.85, leftX = -1.08, rightX = 0.72;
+        
+        function makeTube(x, yCenter, radius) {
+            const geo = new THREE.CylinderGeometry(radius, radius, tubeHeight, 52);
+            const mat = new THREE.MeshPhysicalMaterial({ color: 0xc6e2ff, metalness: 0.93, roughness: 0.16, transparent: true, opacity: 0.6 });
+            const tube = new THREE.Mesh(geo, mat);
+            tube.position.set(x, yCenter, 0);
+            tube.castShadow = true;
+            const edges = new THREE.EdgesGeometry(geo);
+            const wire = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x9ac0e6 }));
+            tube.add(wire);
+            return tube;
+        }
+        const leftTube = makeTube(leftX, tubeCenterY, 0.29);
+        const rightTube = makeTube(rightX, tubeCenterY, 0.29);
+        glassGroup.add(leftTube, rightTube);
+        
+        // 底部U型弯管
+        const curvePoints = [new THREE.Vector3(leftX, tubeBottomY, 0), new THREE.Vector3(-0.62, tubeBottomY-0.12, 0), new THREE.Vector3(0, tubeBottomY-0.29, 0), new THREE.Vector3(0.62, tubeBottomY-0.12, 0), new THREE.Vector3(rightX, tubeBottomY, 0)];
+        const curveGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curvePoints), 70, 0.148, 24, false);
+        const uTube = new THREE.Mesh(curveGeo, new THREE.MeshPhysicalMaterial({ color: 0xbcdaff, metalness: 0.9, transparent: true, opacity: 0.62 }));
+        glassGroup.add(uTube);
+        
+        // 附加弯管
+        const extraPoints = [new THREE.Vector3(0, -1.65, 0), new THREE.Vector3(0.5, -1.7, 0), new THREE.Vector3(1.0, -1.55, 0), new THREE.Vector3(1.45, -1.2, 0), new THREE.Vector3(1.65, -0.45, 0)];
+        const extraTubeGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(extraPoints), 48, 0.105, 16, false);
+        const extraTubeMat = new THREE.MeshPhysicalMaterial({ color: 0xaad0fa, metalness: 0.88, roughness: 0.25, transparent: true, opacity: 0.62 });
+        const extraTube = new THREE.Mesh(extraTubeGeo, extraTubeMat);
+        glassGroup.add(extraTube);
+        
+        // 上连接器
+        const upperConnector = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 1.15, 28), new THREE.MeshPhysicalMaterial({ color: 0xb8d4ff, transparent: true, opacity: 0.58 }));
+        upperConnector.position.set(0, -0.92, 0);
+        glassGroup.add(upperConnector);
+        
+        // 活塞
+        const pistonBody = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.44, 34), new THREE.MeshStandardMaterial({ color: 0xeef4ee, roughness: 0.45 }));
+        pistonBody.position.set(0, -1.51, 0);
+        const pistonHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4, 20), new THREE.MeshStandardMaterial({ color: 0xe2ece2 }));
+        pistonHandle.position.set(0, -1.28, 0);
+        glassGroup.add(pistonBody, pistonHandle);
+        
+        // 球形漏斗
+        const funnelSphere = new THREE.Mesh(new THREE.SphereGeometry(0.41, 72, 72), new THREE.MeshPhysicalMaterial({ color: 0xd0ecff, transparent: true, opacity: 0.65 }));
+        funnelSphere.position.set(1.68, 1.58, 0);
+        glassGroup.add(funnelSphere);
+        const glassRing = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.048, 36, 72), new THREE.MeshPhysicalMaterial({ color: 0xd8f0ff, transparent: true }));
+        glassRing.position.set(1.68, 1.98, 0);
+        glassRing.rotation.x = Math.PI/2;
+        glassGroup.add(glassRing);
+        const funnelNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 1.85, 30), new THREE.MeshPhysicalMaterial({ color: 0xc0dcff, transparent: true, opacity: 0.6 }));
+        funnelNeck.position.set(1.68, 0.26, 0);
+        glassGroup.add(funnelNeck);
+        
+        // 铂电极
+        const electrodeMat = new THREE.MeshStandardMaterial({ color: 0xe8eef4, metalness: 0.95 });
+        const leftElectrode = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.108, 1.62, 28), electrodeMat);
+        const rightElectrode = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.108, 1.62, 28), electrodeMat);
+        scene.add(leftElectrode);
+        scene.add(rightElectrode);
+        const targetLeftPos = new THREE.Vector3(leftX, 0.55, 0);
+        const targetRightPos = new THREE.Vector3(rightX, 0.55, 0);
+        leftElectrode.position.copy(targetLeftPos);
+        rightElectrode.position.copy(targetRightPos);
+        leftElectrode.rotation.set(0,0,0);
+        rightElectrode.rotation.set(0,0,0);
+        
+        // 电极的世界坐标
+        const anodePos = targetRightPos.clone();    // 阳极 (+) 右侧电极
+        const cathodePos = targetLeftPos.clone();   // 阴极 (-) 左侧电极
+        
+        // ========== 创建导线 (平滑曲线，正极红连接阳极，负极黑连接阴极) ==========
+        function createWire(start, end, colorHex, radius = 0.028) {
+            const mid = new THREE.Vector3().lerpVectors(start, end, 0.5);
+            mid.y += 0.45;
+            if (colorHex === 0xff3333) {
+                mid.z += 0.2;
+            } else {
+                mid.z -= 0.2;
+            }
+            if (mid.x > -0.5 && mid.x < 0.5) mid.x += (colorHex === 0xff3333 ? 0.3 : -0.3);
+            const curve = new THREE.CatmullRomCurve3([start, mid, end]);
+            const tubeGeo = new THREE.TubeGeometry(curve, 48, radius, 12, false);
+            const material = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7, roughness: 0.4 });
+            const wire = new THREE.Mesh(tubeGeo, material);
+            wire.castShadow = true;
+            return wire;
+        }
+        
+        // 正极导线 (红) 连接稳压器正极接线柱（右侧）到阳极（右侧电极）
+        const posWire = createWire(posTerminalWorld, anodePos, 0xff3333, 0.028);
+        scene.add(posWire);
+        
+        // 负极导线 (黑) 连接稳压器负极接线柱（左侧）到阴极（左侧电极）
+        const negWire = createWire(negTerminalWorld, cathodePos, 0x444444, 0.028);
+        scene.add(negWire);
+        
+        // 添加导线标签
+        const posWireLabelDiv = document.createElement('div');
+        posWireLabelDiv.textContent = '正极导线';
+        posWireLabelDiv.style.cssText = 'color:#ffaaaa; background:rgba(0,0,0,0.5); font-size:9px; padding:2px 6px; border-radius:12px; pointer-events:none; white-space:nowrap;';
+        const posWireLabel = new CSS2DObject(posWireLabelDiv);
+        const midPos = new THREE.Vector3().lerpVectors(posTerminalWorld, anodePos, 0.5);
+        midPos.y += 0.2;
+        posWireLabel.position.copy(midPos);
+        scene.add(posWireLabel);
+        
+        const negWireLabelDiv = document.createElement('div');
+        negWireLabelDiv.textContent = '负极导线';
+        negWireLabelDiv.style.cssText = 'color:#cccccc; background:rgba(0,0,0,0.5); font-size:9px; padding:2px 6px; border-radius:12px; pointer-events:none; white-space:nowrap;';
+        const negWireLabel = new CSS2DObject(negWireLabelDiv);
+        const midNeg = new THREE.Vector3().lerpVectors(negTerminalWorld, cathodePos, 0.5);
+        midNeg.y += 0.2;
+        negWireLabel.position.copy(midNeg);
+        scene.add(negWireLabel);
+        
+        // 刻度线
+        function addScaleMarks(xPos, isLeft) {
+            const markMat = new THREE.MeshStandardMaterial({ color: 0x2c4c6e });
+            const startY = tubeBottomY;
+            const stepY = tubeHeight / 16;
+            const zOff = isLeft ? -0.31 : 0.31;
+            for (let i = 0; i <= 16; i++) {
+                const y = startY + i * stepY;
+                const len = (i % 4 === 0) ? 0.2 : 0.1;
+                const mark = new THREE.Mesh(new THREE.BoxGeometry(len, 0.022, 0.012), markMat);
+                mark.position.set(xPos, y, zOff);
+                glassGroup.add(mark);
+            }
+        }
+        addScaleMarks(leftX, true);
+        addScaleMarks(rightX, false);
+        
+        function addLabel(text, pos, bg = 'rgba(30,45,65,0.8)') {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.style.cssText = `color:#f0f5fc; background:${bg}; font-size:11px; padding:3px 10px; border-radius:24px; backdrop-filter:blur(5px); font-weight:500; pointer-events:none;`;
+            const label = new CSS2DObject(div);
+            label.position.copy(pos);
+            scene.add(label);
+        }
+        addLabel('球形漏斗 (加液口)', new THREE.Vector3(2.05, 2.22, 0.35), 'rgba(55,80,105,0.8)');
+        addLabel('活塞 (关闭)', new THREE.Vector3(0.6, -1.48, 0.5));
+        addLabel('阴极 (-)', new THREE.Vector3(-1.42, 0.48, 0.42));
+        addLabel('阳极 (+)', new THREE.Vector3(1.08, 0.48, 0.42));
+        
+        // ========== 液体系统 ==========
+        let leftSolHeightCm = 4.65;
+        let rightSolHeightCm = 4.65;
+        const totalMaxCm = 10.0;
+        const initialLeftSolCm = 4.65;
+        
+        let leftSolMesh = null, leftAuxMesh = null, rightSolMesh = null, rightAuxMesh = null;
+        const tubeRadiusLiquid = 0.248;
+        const bottomY = tubeBottomY;
+        
+        function cmToY(cm) {
+            return tubeBottomY + (cm / 16) * tubeHeight;
+        }
+        
+        function createLiquidMaterial(color, opacity, emissiveInt = 0.07) {
+            return new THREE.MeshPhysicalMaterial({ color, metalness: 0.08, roughness: 0.32, transparent: true, opacity, emissive: color, emissiveIntensity: emissiveInt });
+        }
+        
+        function rebuildLiquids() {
+            if (leftSolMesh) glassGroup.remove(leftSolMesh);
+            if (leftAuxMesh) glassGroup.remove(leftAuxMesh);
+            if (rightSolMesh) glassGroup.remove(rightSolMesh);
+            if (rightAuxMesh) glassGroup.remove(rightAuxMesh);
+            
+            const leftSolTopY = cmToY(leftSolHeightCm);
+            const leftSolH = Math.max(0.01, leftSolTopY - bottomY);
+            if (leftSolH > 0.01 && leftSolHeightCm > 0) {
+                const solGeo = new THREE.CylinderGeometry(tubeRadiusLiquid, tubeRadiusLiquid, leftSolH, 48);
+                const solMat = createLiquidMaterial(0xb55a2c, 0.88, 0.12);
+                leftSolMesh = new THREE.Mesh(solGeo, solMat);
+                leftSolMesh.position.set(leftX, bottomY + leftSolH/2, 0);
+                glassGroup.add(leftSolMesh);
+            }
+            const leftAuxTopY = cmToY(totalMaxCm);
+            const leftAuxH = Math.max(0, leftAuxTopY - leftSolTopY);
+            if (leftAuxH > 0.01 && (totalMaxCm - leftSolHeightCm) > 0) {
+                const auxGeo = new THREE.CylinderGeometry(tubeRadiusLiquid, tubeRadiusLiquid, leftAuxH, 48);
+                const auxMat = createLiquidMaterial(0x8bbce6, 0.72, 0.05);
+                leftAuxMesh = new THREE.Mesh(auxGeo, auxMat);
+                leftAuxMesh.position.set(leftX, leftSolTopY + leftAuxH/2, 0);
+                glassGroup.add(leftAuxMesh);
+            }
+            
+            const rightSolTopY = cmToY(rightSolHeightCm);
+            const rightSolH = Math.max(0.01, rightSolTopY - bottomY);
+            if (rightSolH > 0.01 && rightSolHeightCm > 0) {
+                const solGeoR = new THREE.CylinderGeometry(tubeRadiusLiquid, tubeRadiusLiquid, rightSolH, 48);
+                const solMatR = createLiquidMaterial(0xb55a2c, 0.88, 0.1);
+                rightSolMesh = new THREE.Mesh(solGeoR, solMatR);
+                rightSolMesh.position.set(rightX, bottomY + rightSolH/2, 0);
+                glassGroup.add(rightSolMesh);
+            }
+            const rightAuxTopY = cmToY(totalMaxCm);
+            const rightAuxH = Math.max(0, rightAuxTopY - rightSolTopY);
+            if (rightAuxH > 0.01 && (totalMaxCm - rightSolHeightCm) > 0) {
+                const auxGeoR = new THREE.CylinderGeometry(tubeRadiusLiquid, tubeRadiusLiquid, rightAuxH, 48);
+                const auxMatR = createLiquidMaterial(0x8bbce6, 0.72, 0.05);
+                rightAuxMesh = new THREE.Mesh(auxGeoR, auxMatR);
+                rightAuxMesh.position.set(rightX, rightSolTopY + rightAuxH/2, 0);
+                glassGroup.add(rightAuxMesh);
+            }
+        }
+        
+        // 电泳物理参数
+        const ETA = 0.01005;
+        const D = 81.0;
+        const K = 4;
+        const SQUARE300 = 90000;
+        const PI = Math.PI;
+        const REF_ZETA = 0.052;
+        
+        let isElectrophoresis = false;
+        let elapsedSeconds = 0;
+        let timerInterval = null;
+        
+        const voltageNum = document.getElementById('voltageNum');
+        const voltageSlider = document.getElementById('voltageSlider');
+        const voltageShow = document.getElementById('voltageShow');
+        const distanceNum = document.getElementById('distanceNum');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const distanceShow = document.getElementById('distanceShow');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetMoveBtn = document.getElementById('resetMoveBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const liveDistanceSpan = document.getElementById('liveDistance');
+        const speedValSpan = document.getElementById('speedVal');
+        const zetaValSpan = document.getElementById('zetaVal');
+        
+        function syncVoltage() {
+            let v = parseFloat(voltageNum.value);
+            if (isNaN(v)) v = 60;
+            v = Math.min(150, Math.max(0, v));
+            voltageNum.value = v;
+            voltageSlider.value = v;
+            voltageShow.innerText = v + ' V';
+            updateStabilizerDisplay();
+        }
+        function syncDistance() {
+            let d = parseFloat(distanceNum.value);
+            if (isNaN(d)) d = 40;
+            d = Math.min(70, Math.max(20, d));
+            distanceNum.value = d;
+            distanceSlider.value = d;
+            distanceShow.innerText = d.toFixed(1) + ' cm';
+        }
+        voltageNum.addEventListener('input', syncVoltage);
+        voltageSlider.addEventListener('input', () => { voltageNum.value = voltageSlider.value; syncVoltage(); });
+        distanceNum.addEventListener('input', syncDistance);
+        distanceSlider.addEventListener('input', () => { distanceNum.value = distanceSlider.value; syncDistance(); });
+        
+        function getTheoreticalSpeed(voltage, distanceCm) {
+            if (voltage <= 0 || distanceCm <= 0) return 0;
+            return (REF_ZETA * D * voltage) / (K * PI * ETA * distanceCm * SQUARE300);
+        }
+        
+        function computeZetaFromDistance(d_mm, voltage, distanceCm, timeSec) {
+            if (timeSec <= 0 || voltage <= 0 || distanceCm <= 0) return 0;
+            let d_cm = d_mm / 10;
+            let u = d_cm / timeSec;
+            let numerator = K * PI * ETA * distanceCm * u * SQUARE300;
+            let denominator = D * voltage;
+            return numerator / denominator;
+        }
+        
+        function updateLeftSolHeightByTime() {
+            if (!isElectrophoresis) return;
+            let voltage = parseFloat(voltageNum.value);
+            let distance = parseFloat(distanceNum.value);
+            if (voltage <= 0 || elapsedSeconds <= 0) return;
+            let u = getTheoreticalSpeed(voltage, distance);
+            let moveCm = u * elapsedSeconds;
+            let newSolCm = initialLeftSolCm + moveCm;
+            if (newSolCm > totalMaxCm) newSolCm = totalMaxCm;
+            if (newSolCm < 0) newSolCm = 0;
+            leftSolHeightCm = newSolCm;
+            rebuildLiquids();
+            let deltaMm = (leftSolHeightCm - initialLeftSolCm) * 10;
+            liveDistanceSpan.innerText = deltaMm.toFixed(2);
+            let actualU = (deltaMm / 10) / elapsedSeconds;
+            if (elapsedSeconds > 0 && !isNaN(actualU)) {
+                speedValSpan.innerText = actualU.toExponential(4);
+                let zeta = computeZetaFromDistance(deltaMm, voltage, distance, elapsedSeconds);
+                zetaValSpan.innerText = zeta.toFixed(5);
+            } else {
+                speedValSpan.innerText = "0.0000";
+            }
+        }
+        
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isElectrophoresis) {
+                    elapsedSeconds++;
+                    timerDisplay.innerText = elapsedSeconds.toFixed(0);
+                    updateLeftSolHeightByTime();
+                }
+            }, 1000);
+        }
+        function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+        
+        function startElectrophoresis() {
+            if (isElectrophoresis) return;
+            let voltage = parseFloat(voltageNum.value);
+            if (voltage <= 0) { alert("请设置电压 > 0 V"); return; }
+            isElectrophoresis = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            if (elapsedSeconds === 0) {
+                leftSolHeightCm = initialLeftSolCm;
+                rebuildLiquids();
+                liveDistanceSpan.innerText = "0.00";
+            }
+            startTimer();
+        }
+        
+        function stopElectrophoresis() {
+            if (!isElectrophoresis) return;
+            isElectrophoresis = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            stopTimer();
+            updateLeftSolHeightByTime();
+        }
+        
+        function resetInterface() {
+            if (isElectrophoresis) stopElectrophoresis();
+            elapsedSeconds = 0;
+            timerDisplay.innerText = "0.0";
+            leftSolHeightCm = initialLeftSolCm;
+            rebuildLiquids();
+            liveDistanceSpan.innerText = "0.00";
+            speedValSpan.innerText = "0.0000";
+            zetaValSpan.innerText = "0.0000";
+        }
+        
+        function recordAndCalculate() {
+            if (elapsedSeconds <= 0) {
+                alert("请先开始电泳一段时间后再记录。");
+                return;
+            }
+            let voltage = parseFloat(voltageNum.value);
+            let distance = parseFloat(distanceNum.value);
+            let deltaMm = (leftSolHeightCm - initialLeftSolCm) * 10;
+            if (deltaMm < 0.01 && elapsedSeconds > 2) {
+                if (voltage <= 0) alert("电压为0，胶粒不移动。");
+                else alert("界面移动微小，可增加电压或延长电泳时间。");
+                return;
+            }
+            let u = (deltaMm / 10) / elapsedSeconds;
+            let zeta = computeZetaFromDistance(deltaMm, voltage, distance, elapsedSeconds);
+            speedValSpan.innerText = u.toExponential(4);
+            zetaValSpan.innerText = zeta.toFixed(5);
+            alert(`记录成功！\n移动距离: ${deltaMm.toFixed(2)} mm\n时间: ${elapsedSeconds} s\n电泳速度: ${u.toExponential(3)} cm/s\nζ电位: ${zeta.toFixed(5)} V`);
+        }
+        
+        startBtn.addEventListener('click', startElectrophoresis);
+        stopBtn.addEventListener('click', stopElectrophoresis);
+        resetMoveBtn.addEventListener('click', resetInterface);
+        recordBtn.addEventListener('click', recordAndCalculate);
+        
+        function initLiquidState() {
+            leftSolHeightCm = initialLeftSolCm;
+            rightSolHeightCm = initialLeftSolCm;
+            rebuildLiquids();
+            liveDistanceSpan.innerText = "0.00";
+        }
+        initLiquidState();
+        
+        function updateStabilizerDisplay() {
+            let volt = parseFloat(voltageNum.value);
+            if (isNaN(volt)) volt = 60;
+            const intensity = 0.3 + (volt / 150) * 0.8;
+            screenMat.emissiveIntensity = intensity;
+            if (volt > 0) {
+                ledMat.color.setHex(0x33ff33);
+                ledMat.emissive.setHex(0x33ff33);
+                ledMat.emissiveIntensity = 0.5 + volt/150;
+            } else {
+                ledMat.color.setHex(0xff3333);
+                ledMat.emissive.setHex(0xff3333);
+                ledMat.emissiveIntensity = 0.3;
+            }
+        }
+        updateStabilizerDisplay();
+        
+        // 漂浮粒子装饰
+        const particleCount = 500;
+        const particleGeo = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            particlePositions[i*3] = (Math.random() - 0.5) * 11;
+            particlePositions[i*3+1] = (Math.random() - 0.5) * 4.2 + 0.9;
+            particlePositions[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        const particles = new THREE.Points(particleGeo, new THREE.PointsMaterial({ color: 0x9accee, size: 0.022, transparent: true, opacity: 0.4 }));
+        scene.add(particles);
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.y += 0.0018;
+            particles.rotation.x = Math.sin(Date.now() * 0.0007) * 0.04;
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        console.log("完整U型电泳仪已加载 | 超级稳压器位于左前方，正负极已互换（红色正极在右侧，黑色负极在左侧）| 导线正确连接 | 界面移动法模拟就绪");
+    </script>
+</body>
+</html>
